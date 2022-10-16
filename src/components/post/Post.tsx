@@ -4,23 +4,35 @@ import { useMutation } from "react-query";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-type Post = { name: string; description: string };
+type Post = { name: string; contents: string; at: string | null };
 export function Post() {
   const [post, setPost] = useState<Post>({
     name: "",
-    description: "",
+    contents: "",
+    at: localStorage.getItem("at"),
   });
   const navigate = useNavigate();
-  const mutation = useMutation((post: Post) => {
-    return axios.post("http://localhost:3000/board", post);
-  });
+  const mutation = useMutation(
+    (post: Post) => {
+      return axios.post("http://localhost:3000/board", post);
+    },
+    {
+      onSuccess: (data) => console.log("post success!  >", data),
+      onError: (error: Error) => {
+        const reg = new RegExp("40*");
+        if (reg.test(error.message)) {
+          alert("로그인 세션이 만료되어 로그아웃됩니다.");
+          navigate("/logout");
+        }
+      },
+    }
+  );
 
   const handleSetPost = (post: Post) => setPost(post);
   const handleOnSubmit = (e: FormEvent) => {
     e.preventDefault();
     try {
       mutation.mutate(post);
-      navigate("boards");
     } catch (e) {
       alert("error");
     }
@@ -46,11 +58,11 @@ export function Post() {
           />
         </div>
         <div>
-          <label htmlFor="name">DESCRIPTION: </label>
+          <label htmlFor="name">contents: </label>
           <input
             type="text"
-            id="description"
-            name="description"
+            id="contents"
+            name="contents"
             required
             minLength={3}
             maxLength={9999999}
@@ -59,6 +71,9 @@ export function Post() {
               handleOnChangeMultipleInputs<Post>(e, handleSetPost, post);
             }}
           />
+        </div>
+        <div>
+          <input type="submit" value="작성하기" />
         </div>
       </form>
     </div>
